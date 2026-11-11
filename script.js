@@ -1,4 +1,4 @@
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY7e6q-OxrQnBQEuHy672u3eiGuNq86zOnWMrZj34ovGrAcUo6qH6MBRnSa7empa9epw/exec";
+const APPS_SCRIPT_URL = "GANTI_DENGAN_WEB_APP_URL_ANDA";
 
 let html5QrCode = null;
 let currentCameraId = null;
@@ -6,7 +6,7 @@ let availableCameras = [];
 let masterSiswa = [];
 let recentScans = [];
 let currentRekapData = null;
-let isScanningPaused = false; // Flag untuk jeda scan
+let isScanningPaused = false;
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playAudioSignal(freq, duration) {
@@ -31,7 +31,6 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(updateClock, 1000);
   document.getElementById('filterTanggal').valueAsDate = new Date();
   loadDataSiswa();
-  populateDropdownFilters();
 });
 
 function updateClock() {
@@ -52,7 +51,6 @@ async function loadDataSiswa() {
   }
 }
 
-// Mengisi opsi filter kelas dan jenis kelamin otomatis
 function populateDropdownFilters() {
   const kelasSet = [...new Set(masterSiswa.map(s => s.kelas))].sort();
   const kelasSelect = document.getElementById('filterKelas');
@@ -61,7 +59,28 @@ function populateDropdownFilters() {
   }
 }
 
+// 1. Validasi Kegiatan Dipilih Terlebih Dahulu
+function handleActivityChange() {
+  const select = document.getElementById('selectKegiatan');
+  const btn = document.getElementById('btnStartScan');
+  const badge = document.getElementById('selectedActivityBadge');
+
+  if (select.value) {
+    btn.disabled = false;
+    btn.classList.remove('bg-slate-300', 'text-slate-500', 'cursor-not-allowed');
+    btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'text-white', 'shadow-md');
+    badge.className = "text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold";
+    badge.innerText = "Kegiatan Dipilih: " + select.value;
+  }
+}
+
 async function startScanner() {
+  const kegiatan = document.getElementById('selectKegiatan').value;
+  if (!kegiatan) {
+    alert("Silakan pilih kegiatan terlebih dahulu!");
+    return;
+  }
+
   document.getElementById('scannerWrapper').classList.remove('hidden');
   document.getElementById('btnStartScan').classList.add('hidden');
   document.getElementById('btnStopScan').classList.remove('hidden');
@@ -104,9 +123,8 @@ async function switchCamera() {
   }
 }
 
-// 2. Validasi Jeda (Cooldown/Debounce) Saat Scan Berhasil
 async function onScanSuccess(decodedText) {
-  if (isScanningPaused) return; // Abaikan jika sedang jeda
+  if (isScanningPaused) return;
 
   const scannedCode = String(decodedText).trim();
   const siswa = masterSiswa.find(s => s.barcode === scannedCode || s.id === scannedCode);
@@ -117,7 +135,6 @@ async function onScanSuccess(decodedText) {
     return;
   }
 
-  // Aktifkan jeda scan selama 3 detik untuk mencegah scan ganda beruntun
   isScanningPaused = true;
   setTimeout(() => { isScanningPaused = false; }, 3000);
 
@@ -198,7 +215,7 @@ function renderRecentList() {
 function openRekapModal() { document.getElementById('rekapModal').classList.remove('hidden'); }
 function closeRekapModal() { document.getElementById('rekapModal').classList.add('hidden'); }
 
-// 3 & 4. Ambil Rekap Berdasarkan Filter Kelas, JK, dan Atur Keterangan
+// 3. Rekap Redesign & Statistik Persentase
 async function fetchRekapData() {
   const tgl = document.getElementById('filterTanggal').value;
   const keg = document.getElementById('filterKegiatan').value;
@@ -211,31 +228,85 @@ async function fetchRekapData() {
   if (json.status === 'success') {
     currentRekapData = json;
     document.getElementById('statsContainer').classList.remove('hidden');
+    document.getElementById('rekapContentWrapper').classList.remove('hidden');
+    
+    const totalSiswa = json.hadir.length + json.tidakHadir.length;
+    const persentase = totalSiswa > 0 ? Math.round((json.hadir.length / totalSiswa) * 100) : 0;
+
     document.getElementById('countHadir').innerText = json.hadir.length;
     document.getElementById('countTidakHadir').innerText = json.tidakHadir.length;
+    document.getElementById('badgeHadir').innerText = json.hadir.length;
+    document.getElementById('badgeTidakHadir').innerText = json.tidakHadir.length;
+    document.getElementById('persentaseHadir').innerText = persentase + '%';
+    document.getElementById('progressBar').style.width = persentase + '%';
 
-    const content = document.getElementById('rekapContent');
-    content.innerHTML = `
-      <div>
-        <h4 class="font-bold text-xs text-rose-600 mb-2">TIDAK HADIR (${json.tidakHadir.length}) - Berikan Keterangan</h4>
-        <div class="space-y-2 max-h-48 overflow-y-auto">
-          ${json.tidakHadir.map((s, idx) => `
-            <div class="p-2.5 bg-rose-50 border border-rose-100 rounded-lg text-xs space-y-1">
-              <div class="flex justify-between font-bold">
-                <span>${s.nama}</span>
-                <span class="text-slate-500">${s.kelas} (${s.kamar})</span>
-              </div>
-              <select onchange="updateKeteranganSiswa('${s.id}', this.value)" class="w-full p-1 border rounded bg-white text-xs font-semibold">
-                <option value="Alpa" ${s.keterangan==='Alpa'?'selected':''}>🔴 Alpa (Tanpa Keterangan)</option>
-                <option value="Sakit" ${s.keterangan==='Sakit'?'selected':''}>🟡 Sakit</option>
-                <option value="Izin" ${s.keterangan==='Izin'?'selected':''}>🔵 Izin Keperluan Tertentu</option>
-                <option value="Pulang" ${s.keterangan==='Pulang'?'selected':''}>🟢 Pulang / Izin di Rumah</option>
-              </select>
-            </div>
-          `).join('')}
+    renderRekapLists();
+  }
+}
+
+function renderRekapLists() {
+  const d = currentRekapData;
+  
+  // List Tidak Hadir dengan Pilihan Keterangan
+  const containerTidakHadir = document.getElementById('listTidakHadirContainer');
+  if (d.tidakHadir.length === 0) {
+    containerTidakHadir.innerHTML = `<div class="p-4 bg-emerald-50 text-emerald-700 text-center rounded-xl text-xs font-bold">✨ Alhamdulillah, seluruh siswa hadir!</div>`;
+  } else {
+    containerTidakHadir.innerHTML = d.tidakHadir.map(s => `
+      <div class="p-3 bg-white border border-rose-100 rounded-xl shadow-xs space-y-2 text-xs">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="font-bold text-slate-800 text-sm">${s.nama}</p>
+            <p class="text-slate-500 font-medium">Kelas: ${s.kelas} • Kamar: ${s.kamar}</p>
+          </div>
+          <span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded font-bold text-[10px]">TIDAK HADIR</span>
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-slate-400 uppercase">Status Keterangan</label>
+          <select onchange="updateKeteranganSiswa('${s.id}', this.value)" class="w-full mt-0.5 p-2 bg-slate-50 border rounded-lg font-semibold text-slate-700">
+            <option value="Alpa" ${s.keterangan==='Alpa'?'selected':''}>🔴 Alpa (Tanpa Keterangan)</option>
+            <option value="Sakit" ${s.keterangan==='Sakit'?'selected':''}>🟡 Sakit</option>
+            <option value="Izin" ${s.keterangan==='Izin'?'selected':''}>🔵 Izin Keperluan Tertentu</option>
+            <option value="Pulang" ${s.keterangan==='Pulang'?'selected':''}>🟢 Pulang / Izin di Rumah</option>
+          </select>
         </div>
       </div>
-    `;
+    `).join('');
+  }
+
+  // List Hadir
+  const containerHadir = document.getElementById('listHadirContainer');
+  if (d.hadir.length === 0) {
+    containerHadir.innerHTML = `<div class="p-4 bg-slate-100 text-slate-500 text-center rounded-xl text-xs font-semibold">Belum ada data siswa hadir.</div>`;
+  } else {
+    containerHadir.innerHTML = d.hadir.map(s => `
+      <div class="p-3 bg-white border border-emerald-100 rounded-xl shadow-xs flex justify-between items-center text-xs">
+        <div>
+          <p class="font-bold text-slate-800">${s.nama}</p>
+          <p class="text-slate-500 font-medium">Kelas: ${s.kelas} • Kamar: ${s.kamar}</p>
+        </div>
+        <span class="font-mono bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-lg font-bold">${s.jam}</span>
+      </div>
+    `).join('');
+  }
+}
+
+function switchTab(tab) {
+  const btnTidakHadir = document.getElementById('tabBtnTidakHadir');
+  const btnHadir = document.getElementById('tabBtnHadir');
+  const listTidakHadir = document.getElementById('listTidakHadirContainer');
+  const listHadir = document.getElementById('listHadirContainer');
+
+  if (tab === 'tidakHadir') {
+    btnTidakHadir.className = "flex-1 py-2 rounded-lg bg-white shadow-sm text-rose-600 font-bold transition-all";
+    btnHadir.className = "flex-1 py-2 rounded-lg text-slate-500 font-medium transition-all";
+    listTidakHadir.classList.remove('hidden');
+    listHadir.classList.add('hidden');
+  } else {
+    btnHadir.className = "flex-1 py-2 rounded-lg bg-white shadow-sm text-emerald-600 font-bold transition-all";
+    btnTidakHadir.className = "flex-1 py-2 rounded-lg text-slate-500 font-medium transition-all";
+    listHadir.classList.remove('hidden');
+    listTidakHadir.classList.add('hidden');
   }
 }
 
@@ -244,7 +315,6 @@ function updateKeteranganSiswa(idSiswa, ket) {
   if (siswa) siswa.keterangan = ket;
 }
 
-// Format WhatsApp Termasuk Keterangan Siswa Tidak Hadir
 function copyWAFormat() {
   if (!currentRekapData) return alert("Silakan tampilkan rekap terlebih dahulu!");
   
@@ -296,14 +366,4 @@ function printPDF() {
   `;
 
   window.print();
-}
-
-async function triggerGenerateBarcode() {
-  if (!confirm("Buat/Update Sheet BARCODE_SISWA di Google Sheets?")) return;
-  const res = await fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    body: JSON.stringify({ action: 'generateBarcodeSheet' })
-  });
-  const json = await res.json();
-  alert(json.message);
 }
