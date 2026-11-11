@@ -1,5 +1,4 @@
-// ISI DENGAN WEB APP URL SETELAH DEPLOYMENT APPS SCRIPT
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxlDWCvQhWE_r-RAhiGmhcuICXauPgab7Bi6tKKbU58sy3cBCFZRJYkBLgPa5W4hk0iLA/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY7e6q-OxrQnBQEuHy672u3eiGuNq86zOnWMrZj34ovGrAcUo6qH6MBRnSa7empa9epw/exec";
 
 let html5QrCode = null;
 let currentCameraId = null;
@@ -7,8 +6,8 @@ let availableCameras = [];
 let masterSiswa = [];
 let recentScans = [];
 let currentRekapData = null;
+let isScanningPaused = false; // Flag untuk jeda scan
 
-// Audio Feedback (Web Audio API)
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playAudioSignal(freq, duration) {
   const osc = audioCtx.createOscillator();
@@ -27,12 +26,12 @@ function playErrorSound() {
   setTimeout(() => playAudioSignal(200, 0.25), 100);
 }
 
-// Inisialisasi App
 document.addEventListener("DOMContentLoaded", () => {
   updateClock();
   setInterval(updateClock, 1000);
   document.getElementById('filterTanggal').valueAsDate = new Date();
   loadDataSiswa();
+  populateDropdownFilters();
 });
 
 function updateClock() {
@@ -40,20 +39,28 @@ function updateClock() {
   document.getElementById('clock').innerText = now.toLocaleTimeString('id-ID');
 }
 
-// Load DB Siswa dari Apps Script
 async function loadDataSiswa() {
   try {
     const res = await fetch(`${APPS_SCRIPT_URL}?action=getDataSiswa`);
     const json = await res.json();
     if (json.status === 'success') {
       masterSiswa = json.data;
+      populateDropdownFilters();
     }
   } catch (err) {
     console.error("Gagal mengambil data siswa", err);
   }
 }
 
-// Scanner Management
+// Mengisi opsi filter kelas dan jenis kelamin otomatis
+function populateDropdownFilters() {
+  const kelasSet = [...new Set(masterSiswa.map(s => s.kelas))].sort();
+  const kelasSelect = document.getElementById('filterKelas');
+  if(kelasSelect) {
+    kelasSelect.innerHTML = `<option value="ALL">Semua Kelas</option>` + kelasSet.map(k => `<option value="${k}">${k}</option>`).join('');
+  }
+}
+
 async function startScanner() {
   document.getElementById('scannerWrapper').classList.remove('hidden');
   document.getElementById('btnStartScan').classList.add('hidden');
@@ -63,13 +70,13 @@ async function startScanner() {
     const devices = await Html5Qrcode.getCameras();
     if (devices && devices.length) {
       availableCameras = devices;
-      currentCameraId = devices[devices.length - 1].id; // Default back camera
+      currentCameraId = devices[devices.length - 1].id;
       if(devices.length > 1) document.getElementById('btnSwitchCam').classList.remove('hidden');
 
       html5QrCode = new Html5Qrcode("reader");
       await html5QrCode.start(
         currentCameraId,
-        { fps: 15, qrbox: { width: 250, height: 180 } },
+        { fps: 10, qrbox: { width: 250, height: 180 } },
         onScanSuccess
       );
     }
@@ -97,11 +104,11 @@ async function switchCamera() {
   }
 }
 
-// Perbaikan Logika Pencocokan Barcode saat Scan Berhasil di script.js
+// 2. Validasi Jeda (Cooldown/Debounce) Saat Scan Berhasil
 async function onScanSuccess(decodedText) {
+  if (isScanningPaused) return; // Abaikan jika sedang jeda
+
   const scannedCode = String(decodedText).trim();
-  
-  // Cocokkan hasil scan kamera dengan kolom BARCODE di data siswa
   const siswa = masterSiswa.find(s => s.barcode === scannedCode || s.id === scannedCode);
 
   if (!siswa) {
@@ -109,6 +116,10 @@ async function onScanSuccess(decodedText) {
     showAlert(`Barcode "${scannedCode}" Tidak Terdaftar!`, "error");
     return;
   }
+
+  // Aktifkan jeda scan selama 3 detik untuk mencegah scan ganda beruntun
+  isScanningPaused = true;
+  setTimeout(() => { isScanningPaused = false; }, 3000);
 
   const kegiatan = document.getElementById('selectKegiatan').value;
   const today = new Date().toISOString().split('T')[0];
@@ -121,9 +132,10 @@ async function onScanSuccess(decodedText) {
       body: JSON.stringify({
         action: 'submitPresensi',
         data: {
-          idSiswa: siswa.id, // Menyimpan ID Siswa ke log presensi
+          idSiswa: siswa.id,
           nama: siswa.nama,
           kelas: siswa.kelas,
+          jk: siswa.jk,
           kamar: siswa.kamar,
           kegiatan: kegiatan,
           tanggal: today
@@ -183,20 +195,17 @@ function renderRecentList() {
   `).join('');
 }
 
-function clearSessionList() {
-  recentScans = [];
-  renderRecentList();
-}
-
-// Rekap Modal & WA/PDF Functions
 function openRekapModal() { document.getElementById('rekapModal').classList.remove('hidden'); }
 function closeRekapModal() { document.getElementById('rekapModal').classList.add('hidden'); }
 
+// 3 & 4. Ambil Rekap Berdasarkan Filter Kelas, JK, dan Atur Keterangan
 async function fetchRekapData() {
   const tgl = document.getElementById('filterTanggal').value;
   const keg = document.getElementById('filterKegiatan').value;
+  const kelas = document.getElementById('filterKelas').value;
+  const jk = document.getElementById('filterJK').value;
 
-  const res = await fetch(`${APPS_SCRIPT_URL}?action=getRekap&tanggal=${tgl}&kegiatan=${keg}`);
+  const res = await fetch(`${APPS_SCRIPT_URL}?action=getRekap&tanggal=${tgl}&kegiatan=${keg}&kelas=${kelas}&jk=${jk}`);
   const json = await res.json();
 
   if (json.status === 'success') {
@@ -208,12 +217,20 @@ async function fetchRekapData() {
     const content = document.getElementById('rekapContent');
     content.innerHTML = `
       <div>
-        <h4 class="font-bold text-xs text-rose-600 mb-2">TIDAK HADIR (${json.tidakHadir.length})</h4>
-        <div class="space-y-1.5 max-h-40 overflow-y-auto">
-          ${json.tidakHadir.map(s => `
-            <div class="p-2 bg-rose-50 border border-rose-100 rounded-lg text-xs flex justify-between">
-              <span><b>${s.nama}</b> (${s.kelas})</span>
-              <span class="text-slate-500">${s.kamar}</span>
+        <h4 class="font-bold text-xs text-rose-600 mb-2">TIDAK HADIR (${json.tidakHadir.length}) - Berikan Keterangan</h4>
+        <div class="space-y-2 max-h-48 overflow-y-auto">
+          ${json.tidakHadir.map((s, idx) => `
+            <div class="p-2.5 bg-rose-50 border border-rose-100 rounded-lg text-xs space-y-1">
+              <div class="flex justify-between font-bold">
+                <span>${s.nama}</span>
+                <span class="text-slate-500">${s.kelas} (${s.kamar})</span>
+              </div>
+              <select onchange="updateKeteranganSiswa('${s.id}', this.value)" class="w-full p-1 border rounded bg-white text-xs font-semibold">
+                <option value="Alpa" ${s.keterangan==='Alpa'?'selected':''}>🔴 Alpa (Tanpa Keterangan)</option>
+                <option value="Sakit" ${s.keterangan==='Sakit'?'selected':''}>🟡 Sakit</option>
+                <option value="Izin" ${s.keterangan==='Izin'?'selected':''}>🔵 Izin Keperluan Tertentu</option>
+                <option value="Pulang" ${s.keterangan==='Pulang'?'selected':''}>🟢 Pulang / Izin di Rumah</option>
+              </select>
             </div>
           `).join('')}
         </div>
@@ -222,22 +239,28 @@ async function fetchRekapData() {
   }
 }
 
-// Copy WA Text Format
+function updateKeteranganSiswa(idSiswa, ket) {
+  const siswa = currentRekapData.tidakHadir.find(s => s.id === idSiswa);
+  if (siswa) siswa.keterangan = ket;
+}
+
+// Format WhatsApp Termasuk Keterangan Siswa Tidak Hadir
 function copyWAFormat() {
   if (!currentRekapData) return alert("Silakan tampilkan rekap terlebih dahulu!");
   
   const d = currentRekapData;
-  let text = `*REKAP SISWA TIDAK HADIR*\n`;
+  let text = `*REKAP PRESENSI ASRAMA*\n`;
   text += `📅 Tanggal: ${d.tanggal}\n`;
   text += `🕌 Kegiatan: ${d.kegiatan}\n`;
   text += `-----------------------------------\n\n`;
 
-  if (d.tidakHadir.length === 0) {
-    text += `✅ *Alhamdulillah, Seluruh Siswa Hadir.*`;
-  } else {
-    text += `❌ *Daftar Siswa Tidak Hadir (${d.tidakHadir.length} Anak):*\n`;
+  text += `✅ *Hadir:* ${d.hadir.length} Anak\n`;
+  text += `❌ *Tidak Hadir:* ${d.tidakHadir.length} Anak\n\n`;
+
+  if (d.tidakHadir.length > 0) {
+    text += `*Rincian Tidak Hadir:*\n`;
     d.tidakHadir.forEach((s, idx) => {
-      text += `${idx + 1}. *${s.nama}* | Kelas: ${s.kelas} | Kamar: ${s.kamar}\n`;
+      text += `${idx + 1}. *${s.nama}* (${s.kelas}) - Kamar ${s.kamar}\n   ↳ Keterangan: *${s.keterangan}*\n`;
     });
   }
 
@@ -245,7 +268,6 @@ function copyWAFormat() {
   alert("Format Rekap WA Berhasil Disalin!");
 }
 
-// Print PDF
 function printPDF() {
   if (!currentRekapData) return alert("Tampilkan rekap terlebih dahulu!");
   
@@ -256,15 +278,15 @@ function printPDF() {
       <h2 style="text-align:center; margin-bottom: 2px;">LAPORAN PRESENSI KEHADIRAN ASRAMA</h2>
       <p style="text-align:center; margin-top:0;">Tanggal: ${d.tanggal} | Kegiatan: ${d.kegiatan}</p>
       <hr/>
-      <h3>A. Siswa Tidak Hadir (${d.tidakHadir.length})</h3>
+      <h3>Daftar Siswa Tidak Hadir (${d.tidakHadir.length})</h3>
       <table border="1" cellspacing="0" cellpadding="5" width="100%">
-        <tr><th>No</th><th>ID</th><th>Nama</th><th>Kelas</th><th>Kamar</th></tr>
+        <tr><th>No</th><th>Nama</th><th>Kelas</th><th>Kamar</th><th>Keterangan</th></tr>
         ${d.tidakHadir.map((s, i) => `
-          <tr><td>${i+1}</td><td>${s.id}</td><td>${s.nama}</td><td>${s.kelas}</td><td>${s.kamar}</td></tr>
+          <tr><td>${i+1}</td><td>${s.nama}</td><td>${s.kelas}</td><td>${s.kamar}</td><td><b>${s.keterangan}</b></td></tr>
         `).join('')}
       </table>
-      <br/>
-      <table width="100%" style="margin-top:30px;">
+      <br/><br/>
+      <table width="100%">
         <tr>
           <td align="center">Petugas Asrama<br/><br/><br/>(...............................)</td>
           <td align="center">Pengasuh Asrama<br/><br/><br/>(...............................)</td>
@@ -276,7 +298,6 @@ function printPDF() {
   window.print();
 }
 
-// Generate Sheet Barcode Trigger
 async function triggerGenerateBarcode() {
   if (!confirm("Buat/Update Sheet BARCODE_SISWA di Google Sheets?")) return;
   const res = await fetch(APPS_SCRIPT_URL, {
