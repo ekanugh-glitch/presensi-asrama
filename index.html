@@ -33,4 +33,139 @@
           <label class="text-xs font-semibold text-slate-500 uppercase">Pilih Kegiatan</label>
           <select id="selectKegiatan" class="w-full mt-1 p-2.5 bg-slate-50 border rounded-xl font-medium focus:ring-2 focus:ring-indigo-500">
             <optgroup label="Sholat 5 Waktu">
-              <option value="Subuh">Sh
+              <option value="Subuh">Sholat Subuh</option>
+              <option value="Dzuhur">Sholat Dzuhur</option>
+              <option value="Ashar">Sholat Ashar</option>
+              <option value="Maghrib">Sholat Maghrib</option>
+              <option value="Isya">Sholat Isya</option>
+            </optgroup>
+            <option value="Kegiatan Asrama">Kegiatan Asrama</option>
+            <option value="Apel Malam">Apel Malam</option>
+          </select>
+        </div>
+
+        <div class="flex gap-2">
+          <button id="btnStartScan" onclick="startScanner()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl flex justify-center items-center gap-2">
+            <i class="fa-solid fa-camera"></i> Buka Kamera
+          </button>
+          <button id="btnStopScan" onclick="stopScanner()" class="hidden bg-slate-500 text-white font-semibold px-4 rounded-xl">
+            Tutup
+          </button>
+          <button id="btnSwitchCam" onclick="switchCamera()" class="hidden bg-slate-200 text-slate-700 px-3 rounded-xl">
+            <i class="fa-solid fa-camera-rotate"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Video Scanner Container -->
+      <div id="scannerWrapper" class="hidden overflow-hidden rounded-xl bg-black relative">
+        <div id="reader" class="w-full"></div>
+      </div>
+
+      <!-- Realtime Feedback Alert -->
+      <div id="alertBox" class="hidden mt-3 p-3 rounded-xl text-center text-sm font-semibold transition-all"></div>
+    </section>
+
+    <!-- Scan History List (Sesi Aktif) -->
+    <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-bold text-sm text-slate-700">Baru Di-scan (<span id="scanCount">0</span>)</h3>
+        <button onclick="clearSessionList()" class="text-xs text-red-500 font-semibold">Reset</button>
+      </div>
+      <div id="recentList" class="space-y-2 max-h-48 overflow-y-auto">
+        <p class="text-xs text-slate-400 text-center py-4">Belum ada presensi pada sesi ini</p>
+      </div>
+    </section>
+
+    <!-- Modal Rekap & Export -->
+    <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+      <h3 class="font-bold text-sm text-slate-700 mb-3">Rekap & Laporan</h3>
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="openRekapModal()" class="p-3 bg-emerald-50 text-emerald-700 font-semibold text-xs rounded-xl border border-emerald-200 flex flex-col items-center gap-1">
+          <i class="fa-solid fa-chart-pie text-lg"></i> Rekap Presensi
+        </button>
+        <button onclick="triggerGenerateBarcode()" class="p-3 bg-amber-50 text-amber-700 font-semibold text-xs rounded-xl border border-amber-200 flex flex-col items-center gap-1">
+          <i class="fa-solid fa-id-card text-lg"></i> Render Barcode
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal View Rekap -->
+  <div id="rekapModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="p-4 bg-slate-50 border-b flex justify-between items-center">
+        <h3 class="font-bold text-slate-800">Rekap Presensi Harian</h3>
+        <button onclick="closeRekapModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      
+      <div class="p-4 space-y-3 overflow-y-auto flex-1">
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="font-semibold">Tanggal</label>
+            <input type="date" id="filterTanggal" class="w-full mt-1 p-2 border rounded-lg">
+          </div>
+          <div>
+            <label class="font-semibold">Kegiatan</label>
+            <select id="filterKegiatan" class="w-full mt-1 p-2 border rounded-lg">
+              <option value="Subuh">Sholat Subuh</option>
+              <option value="Dzuhur">Sholat Dzuhur</option>
+              <option value="Ashar">Sholat Ashar</option>
+              <option value="Maghrib">Sholat Maghrib</option>
+              <option value="Isya">Sholat Isya</option>
+              <option value="Kegiatan Asrama">Kegiatan Asrama</option>
+              <option value="Apel Malam">Apel Malam</option>
+            </select>
+          </div>
+          <div>
+            <label class="font-semibold">Kelas</label>
+            <select id="filterKelas" class="w-full mt-1 p-2 border rounded-lg">
+              <option value="ALL">Semua Kelas</option>
+            </select>
+          </div>
+          <div>
+            <label class="font-semibold">Jenis Kelamin</label>
+            <select id="filterJK" class="w-full mt-1 p-2 border rounded-lg">
+              <option value="ALL">Semua (L/P)</option>
+              <option value="Laki-laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+            </select>
+          </div>
+        </div>
+        <button onclick="fetchRekapData()" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-semibold text-xs">Tampilkan Rekap</button>
+
+        <!-- Stats Bar -->
+        <div id="statsContainer" class="hidden grid grid-cols-2 gap-2 text-center my-3">
+          <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+            <span class="text-xs text-emerald-600 font-semibold">HADIR</span>
+            <p id="countHadir" class="text-xl font-bold text-emerald-700">0</p>
+          </div>
+          <div class="bg-rose-50 p-3 rounded-xl border border-rose-100">
+            <span class="text-xs text-rose-600 font-semibold">TIDAK HADIR</span>
+            <p id="countTidakHadir" class="text-xl font-bold text-rose-700">0</p>
+          </div>
+        </div>
+
+        <!-- Dynamic Content Lists -->
+        <div id="rekapContent" class="space-y-4"></div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="p-4 bg-slate-50 border-t grid grid-cols-2 gap-2">
+        <button onclick="copyWAFormat()" class="py-2.5 bg-emerald-600 text-white rounded-xl font-semibold text-xs flex justify-center items-center gap-2">
+          <i class="fa-brands fa-whatsapp text-sm"></i> Salin Rekap WA
+        </button>
+        <button onclick="printPDF()" class="py-2.5 bg-slate-800 text-white rounded-xl font-semibold text-xs flex justify-center items-center gap-2">
+          <i class="fa-solid fa-print text-sm"></i> Cetak PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Area Rahasia Untuk Output PDF Print -->
+  <div id="printableArea" class="hidden"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
