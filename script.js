@@ -1,4 +1,4 @@
-const APPS_SCRIPT_URL = "GANTI_DENGAN_WEB_APP_URL_ANDA";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwiv8LdYrfy70RafqD1RuMFIFB3i3DmY1EvXAzm726OmiCTK7o4e45iCotOdl3rWMX2PA/exec";
 
 let html5QrCode = null;
 let currentCameraId = null;
