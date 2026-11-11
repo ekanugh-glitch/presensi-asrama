@@ -17,7 +17,7 @@
       <h1 class="font-bold text-base flex items-center gap-2">
         <i class="fa-solid fa-qrcode"></i> Presensi Asrama
       </h1>
-      <span id="clock" class="text-xs bg-indigo-800 px-2 py-1 rounded font-mono">00:00:00</span>
+      <span id="clock" class="text-xs bg-indigo-800 px-2.5 py-1 rounded-md font-mono">00:00:00</span>
     </div>
   </header>
 
@@ -28,11 +28,11 @@
     <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
       <div class="space-y-3 mb-4">
         <div>
-          <label class="text-xs font-bold text-slate-600 uppercase flex items-center justify-between">
+          <label class="text-xs font-bold text-slate-600 uppercase tracking-wide flex items-center justify-between mb-1">
             <span>Pilih Kegiatan Sesi Ini</span>
-            <span id="selectedActivityBadge" class="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-semibold">Wajib Dipilih</span>
+            <span id="selectedActivityBadge" class="text-[11px] bg-rose-100 text-rose-700 px-2.5 py-0.5 rounded-full font-semibold">Wajib Dipilih</span>
           </label>
-          <select id="selectKegiatan" onchange="handleActivityChange()" class="w-full mt-1.5 p-3 bg-slate-50 border-2 border-indigo-200 rounded-xl font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500">
+          <select id="selectKegiatan" onchange="handleActivityChange()" class="w-full p-3 bg-slate-50 border-2 border-indigo-200 rounded-xl font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-500 text-sm">
             <option value="" disabled selected>-- Pilih Kegiatan Terlebih Dahulu --</option>
             <optgroup label="Sholat 5 Waktu">
               <option value="Subuh">Sholat Subuh</option>
@@ -47,13 +47,13 @@
         </div>
 
         <div class="flex gap-2">
-          <button id="btnStartScan" onclick="startScanner()" disabled class="flex-1 bg-slate-300 text-slate-500 font-semibold py-3 rounded-xl flex justify-center items-center gap-2 transition-all cursor-not-allowed">
+          <button id="btnStartScan" onclick="startScanner()" disabled class="flex-1 bg-slate-300 text-slate-500 font-semibold py-3 rounded-xl flex justify-center items-center gap-2 transition-all cursor-not-allowed text-sm">
             <i class="fa-solid fa-camera"></i> Buka Kamera Scanner
           </button>
-          <button id="btnStopScan" onclick="stopScanner()" class="hidden bg-slate-500 text-white font-semibold px-4 rounded-xl">
+          <button id="btnStopScan" onclick="stopScanner()" class="hidden bg-slate-500 text-white font-semibold px-4 rounded-xl text-sm">
             Tutup
           </button>
-          <button id="btnSwitchCam" onclick="switchCamera()" class="hidden bg-slate-200 text-slate-700 px-3 rounded-xl">
+          <button id="btnSwitchCam" onclick="switchCamera()" class="hidden bg-slate-200 text-slate-700 px-3 rounded-xl text-sm">
             <i class="fa-solid fa-camera-rotate"></i>
           </button>
         </div>
@@ -65,50 +65,55 @@
       </div>
 
       <!-- Realtime Feedback Alert -->
-      <div id="alertBox" class="hidden mt-3 p-3 rounded-xl text-center text-sm font-semibold transition-all"></div>
+      <div id="alertBox" class="hidden mt-3 p-3.5 rounded-xl text-center text-sm font-semibold transition-all"></div>
     </section>
 
     <!-- Scan History List (Sesi Aktif) -->
     <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
       <div class="flex justify-between items-center mb-3">
         <h3 class="font-bold text-sm text-slate-700">Berhasil Di-scan (<span id="scanCount">0</span>)</h3>
-        <button onclick="clearSessionList()" class="text-xs text-red-500 font-semibold">Reset Sesi</button>
+        <button onclick="clearSessionList()" class="text-xs text-red-500 font-semibold hover:underline">Reset Sesi</button>
       </div>
       <div id="recentList" class="space-y-2 max-h-48 overflow-y-auto">
         <p class="text-xs text-slate-400 text-center py-4">Belum ada presensi pada sesi ini</p>
       </div>
     </section>
 
-    <!-- Menu Rekap (Tanpa Render Barcode) -->
+    <!-- Menu Rekap -->
     <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
       <h3 class="font-bold text-sm text-slate-700 mb-3">Laporan & Rekapitulasi</h3>
-      <button onclick="openRekapModal()" class="w-full p-3.5 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 flex justify-center items-center gap-2 hover:bg-indigo-100 transition-all">
+      <button onclick="openRekapModal()" class="w-full p-3.5 bg-indigo-50 text-indigo-700 font-bold text-sm rounded-xl border border-indigo-200 flex justify-center items-center gap-2 hover:bg-indigo-100 transition-all shadow-xs">
         <i class="fa-solid fa-chart-pie text-base"></i> Buka Menu Rekap Kehadiran
       </button>
     </section>
 
   </main>
 
-  <!-- Modal View Rekap (Redesign Lebih Informatif) -->
+  <!-- Modal View Rekap (Redesign Font Ideal & Layout Nyaman) -->
   <div id="rekapModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+    <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-2xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+      
+      <!-- Modal Header -->
       <div class="p-4 bg-indigo-700 text-white flex justify-between items-center">
         <div>
-          <h3 class="font-bold text-sm">Rekapitulasi Kehadiran</h3>
-          <p class="text-[11px] text-indigo-200">Analisis kehadiran siswa secara real-time</p>
+          <h3 class="font-bold text-base">Rekapitulasi Kehadiran</h3>
+          <p class="text-xs text-indigo-200">Analisis data siswa secara real-time</p>
         </div>
-        <button onclick="closeRekapModal()" class="text-white/80 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+        <button onclick="closeRekapModal()" class="text-white/80 hover:text-white p-2 rounded-full"><i class="fa-solid fa-xmark text-xl"></i></button>
       </div>
       
-      <div class="p-4 space-y-3 overflow-y-auto flex-1 bg-slate-50">
-        <div class="grid grid-cols-2 gap-2 text-xs bg-white p-3 rounded-xl border">
+      <!-- Modal Body -->
+      <div class="p-4 space-y-4 overflow-y-auto flex-1 bg-slate-50">
+        
+        <!-- Filter Box -->
+        <div class="grid grid-cols-2 gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs text-xs">
           <div>
-            <label class="font-semibold text-slate-600">Tanggal</label>
-            <input type="date" id="filterTanggal" class="w-full mt-1 p-2 bg-slate-50 border rounded-lg font-medium">
+            <label class="font-bold text-slate-600 block mb-1">Tanggal</label>
+            <input type="date" id="filterTanggal" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-700">
           </div>
           <div>
-            <label class="font-semibold text-slate-600">Kegiatan</label>
-            <select id="filterKegiatan" class="w-full mt-1 p-2 bg-slate-50 border rounded-lg font-medium">
+            <label class="font-bold text-slate-600 block mb-1">Kegiatan</label>
+            <select id="filterKegiatan" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-700">
               <option value="Subuh">Sholat Subuh</option>
               <option value="Dzuhur">Sholat Dzuhur</option>
               <option value="Ashar">Sholat Ashar</option>
@@ -119,69 +124,72 @@
             </select>
           </div>
           <div>
-            <label class="font-semibold text-slate-600">Kelas</label>
-            <select id="filterKelas" class="w-full mt-1 p-2 bg-slate-50 border rounded-lg font-medium">
+            <label class="font-bold text-slate-600 block mb-1">Kelas</label>
+            <select id="filterKelas" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-700">
               <option value="ALL">Semua Kelas</option>
             </select>
           </div>
           <div>
-            <label class="font-semibold text-slate-600">Jenis Kelamin</label>
-            <select id="filterJK" class="w-full mt-1 p-2 bg-slate-50 border rounded-lg font-medium">
+            <label class="font-bold text-slate-600 block mb-1">Jenis Kelamin</label>
+            <select id="filterJK" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium text-slate-700">
               <option value="ALL">Semua (L/P)</option>
               <option value="Laki-laki">Laki-laki</option>
               <option value="Perempuan">Perempuan</option>
             </select>
           </div>
         </div>
-        <button onclick="fetchRekapData()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-md transition-all">
-          <i class="fa-solid fa-magnifying-glass"></i> Muat Data Rekap
+
+        <button onclick="fetchRekapData()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex justify-center items-center gap-2">
+          <i class="fa-solid fa-magnifying-glass"></i> Tampilkan Rekapitulasi
         </button>
 
         <!-- Stats Visual Card & Progress Bar -->
-        <div id="statsContainer" class="hidden space-y-3 bg-white p-3.5 rounded-xl border">
-          <div class="grid grid-cols-2 gap-2 text-center">
-            <div class="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
-              <span class="text-[10px] text-emerald-600 font-bold uppercase">Hadir</span>
-              <p id="countHadir" class="text-lg font-black text-emerald-700">0</p>
+        <div id="statsContainer" class="hidden space-y-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+          <div class="grid grid-cols-2 gap-3 text-center">
+            <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+              <span class="text-xs text-emerald-700 font-bold uppercase tracking-wider block mb-0.5">Hadir</span>
+              <p id="countHadir" class="text-xl font-black text-emerald-800">0</p>
             </div>
-            <div class="bg-rose-50 p-2.5 rounded-xl border border-rose-200">
-              <span class="text-[10px] text-rose-600 font-bold uppercase">Tidak Hadir</span>
-              <p id="countTidakHadir" class="text-lg font-black text-rose-700">0</p>
+            <div class="bg-rose-50 p-3 rounded-xl border border-rose-200">
+              <span class="text-xs text-rose-700 font-bold uppercase tracking-wider block mb-0.5">Tidak Hadir</span>
+              <p id="countTidakHadir" class="text-xl font-black text-rose-800">0</p>
             </div>
           </div>
+          
           <!-- Progress Bar Kehadiran -->
           <div>
-            <div class="flex justify-between text-[11px] font-bold text-slate-600 mb-1">
-              <span>Persentase Kehadiran</span>
-              <span id="persentaseHadir">0%</span>
+            <div class="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
+              <span>Tingkat Kehadiran</span>
+              <span id="persentaseHadir" class="text-indigo-600 font-black">0%</span>
             </div>
-            <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
-              <div id="progressBar" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+            <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden p-0.5 border border-slate-200">
+              <div id="progressBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
             </div>
           </div>
         </div>
 
-        <!-- Tab Navigasi & List Data -->
-        <div id="rekapContentWrapper" class="hidden space-y-2">
-          <div class="flex bg-slate-200 p-1 rounded-xl text-xs font-bold">
-            <button onclick="switchTab('tidakHadir')" id="tabBtnTidakHadir" class="flex-1 py-2 rounded-lg bg-white shadow-sm text-rose-600 transition-all">Tidak Hadir (<span id="badgeTidakHadir">0</span>)</button>
-            <button onclick="switchTab('hadir')" id="tabBtnHadir" class="flex-1 py-2 rounded-lg text-slate-600 transition-all">Hadir (<span id="badgeHadir">0</span>)</button>
+        <!-- Tab Navigasi & List Data dengan Font Nyaman -->
+        <div id="rekapContentWrapper" class="hidden space-y-3">
+          <div class="flex bg-slate-200 p-1 rounded-xl font-bold text-xs">
+            <button onclick="switchTab('tidakHadir')" id="tabBtnTidakHadir" class="flex-1 py-2.5 rounded-lg bg-white shadow-sm text-rose-700 transition-all text-xs">Tidak Hadir (<span id="badgeTidakHadir">0</span>)</button>
+            <button onclick="switchTab('hadir')" id="tabBtnHadir" class="flex-1 py-2.5 rounded-lg text-slate-600 transition-all text-xs">Hadir (<span id="badgeHadir">0</span>)</button>
           </div>
 
-          <div id="listTidakHadirContainer" class="space-y-2"></div>
-          <div id="listHadirContainer" class="space-y-2 hidden"></div>
+          <div id="listTidakHadirContainer" class="space-y-2.5"></div>
+          <div id="listHadirContainer" class="space-y-2.5 hidden"></div>
         </div>
       </div>
 
-      <!-- Action Buttons -->
-      <div class="p-3 bg-white border-t grid grid-cols-2 gap-2">
-        <button onclick="copyWAFormat()" class="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex justify-center items-center gap-1.5 shadow-sm">
-          <i class="fa-brands fa-whatsapp text-sm"></i> Salin Rekap WA
+      <!-- Action Buttons Footer -->
+      <div class="p-3.5 bg-white border-t border-slate-200 grid grid-cols-2 gap-3">
+        <button onclick="copyWAFormat()" class="py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs sm:text-sm flex justify-center items-center gap-2 shadow-sm transition-all">
+          <i class="fa-brands fa-whatsapp text-base"></i> Salin Rekap WA
         </button>
-        <button onclick="printPDF()" class="py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs flex justify-center items-center gap-1.5 shadow-sm">
-          <i class="fa-solid fa-print text-sm"></i> Cetak PDF
+        <button onclick="printPDF()" class="py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs sm:text-sm flex justify-center items-center gap-2 shadow-sm transition-all">
+          <i class="fa-solid fa-print text-base"></i> Cetak PDF
         </button>
       </div>
+
     </div>
   </div>
 
