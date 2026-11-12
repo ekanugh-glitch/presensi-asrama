@@ -11,8 +11,18 @@
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 pb-20">
 
+  <!-- Full-Screen Success Animation Overlay -->
+  <div id="successOverlay" class="fixed inset-0 bg-emerald-600/95 z-50 hidden flex flex-col items-center justify-center text-white p-6 text-center animate-fade-in">
+    <div class="w-24 h-24 bg-white text-emerald-600 rounded-full flex items-center justify-center text-5xl shadow-2xl mb-6 animate-bounce">
+      <i class="fa-solid fa-check"></i>
+    </div>
+    <h2 class="text-2xl sm:text-3xl font-black uppercase tracking-wider mb-2">PRESENSI BERHASIL!</h2>
+    <p id="overlayNamaSiswa" class="text-xl sm:text-2xl font-bold text-emerald-100 mb-1">-</p>
+    <p id="overlayDetailSiswa" class="text-sm text-emerald-200 font-medium">-</p>
+  </div>
+
   <!-- Header App -->
-  <header class="bg-indigo-700 text-white p-4 shadow-lg sticky top-0 z-50">
+  <header class="bg-indigo-700 text-white p-4 shadow-lg sticky top-0 z-40">
     <div class="max-w-md mx-auto flex justify-between items-center">
       <h1 class="font-bold text-base flex items-center gap-2">
         <i class="fa-solid fa-qrcode"></i> Presensi Asrama
@@ -79,18 +89,18 @@
       </div>
     </section>
 
-    <!-- Menu Rekap -->
+    <!-- Menu Rekap dengan Indikator Loading -->
     <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
       <h3 class="font-bold text-sm text-slate-700 mb-3">Laporan & Rekapitulasi</h3>
-      <button onclick="openRekapModal()" class="w-full p-3.5 bg-indigo-50 text-indigo-700 font-bold text-sm rounded-xl border border-indigo-200 flex justify-center items-center gap-2 hover:bg-indigo-100 transition-all shadow-xs">
+      <button id="btnBukaRekap" onclick="openRekapModal()" class="w-full p-3.5 bg-indigo-50 text-indigo-700 font-bold text-sm rounded-xl border border-indigo-200 flex justify-center items-center gap-2 hover:bg-indigo-100 transition-all shadow-xs">
         <i class="fa-solid fa-chart-pie text-base"></i> Buka Menu Rekap Kehadiran
       </button>
     </section>
 
   </main>
 
-  <!-- Modal View Rekap (Redesign Font Ideal & Layout Nyaman) -->
-  <div id="rekapModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+  <!-- Modal View Rekap -->
+  <div id="rekapModal" class="fixed inset-0 bg-black/50 z-40 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-2xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl">
       
       <!-- Modal Header -->
@@ -139,7 +149,7 @@
           </div>
         </div>
 
-        <button onclick="fetchRekapData()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex justify-center items-center gap-2">
+        <button id="btnMuatRekap" onclick="fetchRekapData()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex justify-center items-center gap-2">
           <i class="fa-solid fa-magnifying-glass"></i> Tampilkan Rekapitulasi
         </button>
 
@@ -156,7 +166,6 @@
             </div>
           </div>
           
-          <!-- Progress Bar Kehadiran -->
           <div>
             <div class="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
               <span>Tingkat Kehadiran</span>
@@ -168,7 +177,7 @@
           </div>
         </div>
 
-        <!-- Tab Navigasi & List Data dengan Font Nyaman -->
+        <!-- Tab Navigasi & List Data -->
         <div id="rekapContentWrapper" class="hidden space-y-3">
           <div class="flex bg-slate-200 p-1 rounded-xl font-bold text-xs">
             <button onclick="switchTab('tidakHadir')" id="tabBtnTidakHadir" class="flex-1 py-2.5 rounded-lg bg-white shadow-sm text-rose-700 transition-all text-xs">Tidak Hadir (<span id="badgeTidakHadir">0</span>)</button>
