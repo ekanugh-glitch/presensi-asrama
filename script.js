@@ -59,7 +59,6 @@ function populateDropdownFilters() {
   }
 }
 
-// 1. Validasi Kegiatan Dipilih Terlebih Dahulu
 function handleActivityChange() {
   const select = document.getElementById('selectKegiatan');
   const btn = document.getElementById('btnStartScan');
@@ -69,7 +68,7 @@ function handleActivityChange() {
     btn.disabled = false;
     btn.classList.remove('bg-slate-300', 'text-slate-500', 'cursor-not-allowed');
     btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'text-white', 'shadow-md');
-    badge.className = "text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold";
+    badge.className = "text-[11px] bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold";
     badge.innerText = "Kegiatan Dipilih: " + select.value;
   }
 }
@@ -167,6 +166,9 @@ async function onScanSuccess(decodedText) {
       if (navigator.vibrate) navigator.vibrate(100);
       showAlert(`✅ ${result.data.nama} (HADIR)`, "success");
       
+      // TAMPILKAN ANIMASI SUKSES FULL-SCREEN
+      showSuccessOverlay(result.data.nama, result.data.kelas, result.data.kamar);
+
       recentScans.unshift(result.data);
       renderRecentList();
     } else if (result.status === 'duplicate') {
@@ -178,6 +180,20 @@ async function onScanSuccess(decodedText) {
     playErrorSound();
     showAlert("Gagal terhubung ke server!", "error");
   }
+}
+
+// Fungsi Menampilkan Animasi Layar Penuh Saat Scan Berhasil
+function showSuccessOverlay(nama, kelas, kamar) {
+  const overlay = document.getElementById('successOverlay');
+  document.getElementById('overlayNamaSiswa').innerText = nama;
+  document.getElementById('overlayDetailSiswa').innerText = `Kelas: ${kelas} • Kamar: ${kamar}`;
+  
+  overlay.classList.remove('hidden');
+  
+  // Otomatis sembunyikan setelah 2 detik
+  setTimeout(() => {
+    overlay.classList.add('hidden');
+  }, 2000);
 }
 
 function showAlert(msg, type) {
@@ -212,42 +228,69 @@ function renderRecentList() {
   `).join('');
 }
 
-function openRekapModal() { document.getElementById('rekapModal').classList.remove('hidden'); }
+// Indikator Loading Saat Membuka Menu Rekap
+async function openRekapModal() {
+  const btn = document.getElementById('btnBukaRekap');
+  const originalHTML = btn.innerHTML;
+  
+  // Ubah tombol jadi indikator loading putar
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-base"></i> Memuat Data Kehadiran...`;
+
+  // Beri jeda sejenak untuk memunculkan efek loading yang mulus
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+    document.getElementById('rekapModal').classList.remove('hidden');
+  }, 400);
+}
+
 function closeRekapModal() { document.getElementById('rekapModal').classList.add('hidden'); }
 
-// 3. Rekap Redesign & Statistik Persentase
+// Indikator Loading Saat Mengklik "Tampilkan Rekapitulasi"
 async function fetchRekapData() {
+  const btn = document.getElementById('btnMuatRekap');
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sedang Merekap...`;
+
   const tgl = document.getElementById('filterTanggal').value;
   const keg = document.getElementById('filterKegiatan').value;
   const kelas = document.getElementById('filterKelas').value;
   const jk = document.getElementById('filterJK').value;
 
-  const res = await fetch(`${APPS_SCRIPT_URL}?action=getRekap&tanggal=${tgl}&kegiatan=${keg}&kelas=${kelas}&jk=${jk}`);
-  const json = await res.json();
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=getRekap&tanggal=${tgl}&kegiatan=${keg}&kelas=${kelas}&jk=${jk}`);
+    const json = await res.json();
 
-  if (json.status === 'success') {
-    currentRekapData = json;
-    document.getElementById('statsContainer').classList.remove('hidden');
-    document.getElementById('rekapContentWrapper').classList.remove('hidden');
-    
-    const totalSiswa = json.hadir.length + json.tidakHadir.length;
-    const persentase = totalSiswa > 0 ? Math.round((json.hadir.length / totalSiswa) * 100) : 0;
+    if (json.status === 'success') {
+      currentRekapData = json;
+      document.getElementById('statsContainer').classList.remove('hidden');
+      document.getElementById('rekapContentWrapper').classList.remove('hidden');
+      
+      const totalSiswa = json.hadir.length + json.tidakHadir.length;
+      const persentase = totalSiswa > 0 ? Math.round((json.hadir.length / totalSiswa) * 100) : 0;
 
-    document.getElementById('countHadir').innerText = json.hadir.length;
-    document.getElementById('countTidakHadir').innerText = json.tidakHadir.length;
-    document.getElementById('badgeHadir').innerText = json.hadir.length;
-    document.getElementById('badgeTidakHadir').innerText = json.tidakHadir.length;
-    document.getElementById('persentaseHadir').innerText = persentase + '%';
-    document.getElementById('progressBar').style.width = persentase + '%';
+      document.getElementById('countHadir').innerText = json.hadir.length;
+      document.getElementById('countTidakHadir').innerText = json.tidakHadir.length;
+      document.getElementById('badgeHadir').innerText = json.hadir.length;
+      document.getElementById('badgeTidakHadir').innerText = json.tidakHadir.length;
+      document.getElementById('persentaseHadir').innerText = persentase + '%';
+      document.getElementById('progressBar').style.width = persentase + '%';
 
-    renderRekapLists();
+      renderRekapLists();
+    }
+  } catch (err) {
+    alert("Gagal memuat rekap data.");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
   }
 }
 
 function renderRekapLists() {
   const d = currentRekapData;
   
-  // List Tidak Hadir dengan Pilihan Keterangan
   const containerTidakHadir = document.getElementById('listTidakHadirContainer');
   if (d.tidakHadir.length === 0) {
     containerTidakHadir.innerHTML = `<div class="p-4 bg-emerald-50 text-emerald-700 text-center rounded-xl text-xs font-bold">✨ Alhamdulillah, seluruh siswa hadir!</div>`;
@@ -274,7 +317,6 @@ function renderRekapLists() {
     `).join('');
   }
 
-  // List Hadir
   const containerHadir = document.getElementById('listHadirContainer');
   if (d.hadir.length === 0) {
     containerHadir.innerHTML = `<div class="p-4 bg-slate-100 text-slate-500 text-center rounded-xl text-xs font-semibold">Belum ada data siswa hadir.</div>`;
@@ -298,13 +340,13 @@ function switchTab(tab) {
   const listHadir = document.getElementById('listHadirContainer');
 
   if (tab === 'tidakHadir') {
-    btnTidakHadir.className = "flex-1 py-2 rounded-lg bg-white shadow-sm text-rose-600 font-bold transition-all";
-    btnHadir.className = "flex-1 py-2 rounded-lg text-slate-500 font-medium transition-all";
+    btnTidakHadir.className = "flex-1 py-2 rounded-lg bg-white shadow-sm text-rose-700 font-bold transition-all text-xs";
+    btnHadir.className = "flex-1 py-2 rounded-lg text-slate-500 font-medium transition-all text-xs";
     listTidakHadir.classList.remove('hidden');
     listHadir.classList.add('hidden');
   } else {
-    btnHadir.className = "flex-1 py-2 rounded-lg bg-white shadow-sm text-emerald-600 font-bold transition-all";
-    btnTidakHadir.className = "flex-1 py-2 rounded-lg text-slate-500 font-medium transition-all";
+    btnHadir.className = "flex-1 py-2 rounded-lg bg-white shadow-sm text-emerald-700 font-bold transition-all text-xs";
+    btnTidakHadir.className = "flex-1 py-2 rounded-lg text-slate-500 font-medium transition-all text-xs";
     listHadir.classList.remove('hidden');
     listTidakHadir.classList.add('hidden');
   }
